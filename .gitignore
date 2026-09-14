@@ -1,0 +1,22 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Caché de compilación
+__pycache__/
+*.py[cod]
+
+# Secretos y configuración local
+.env
+
+# Bases de datos SQLite locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Cobertura y pruebas
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
