@@ -1,57 +1,32 @@
-from vehiculo import Vehiculo
-from inventario import Inventario
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 
-def mostrar_menu():
-    print("\nSIVVE - Sistema de Inventario")
-    print("1. Registrar vehículo")
-    print("2. Buscar vehículo")
-    print("3. Mostrar inventario")
-    print("4. Eliminar vehículo")
-    print("5. Salir")
-    return input("Seleccione una opción: ")
+app = FastAPI(title="Exodo API - Login Admin")
 
-def ejecutar_programa():
-    inventario = Inventario()
+# Credenciales fijas para el administrador (por ahora)
+ADMIN_USERNAME = "Corp_Admin_2026_1403"
+ADMIN_PASSWORD = "Admin123#2026"
 
-    while True:
-        opcion = mostrar_menu()
+@app.get("/")
+def root():
+    return {"message": "API de Exodo funcionando. Ve a /docs para probar el login."}
 
-        if opcion == "1":
-            vin = input("VIN: ")
-            placa = input("Placa: ")
-            marca = input("Marca: ")
-            modelo = input("Modelo: ")
-            anio = input("Año: ")
-            precio = input("Precio: ")
-
-            auto = Vehiculo(vin, placa, marca, modelo, anio, precio)
-            inventario.registrar_vehiculo(auto)
-
-        elif opcion == "2":
-            criterio = input("Buscar por (vin, placa, marca, modelo, anio, estado): ").lower()
-            valor = input(f"Ingrese el valor para {criterio}: ")
-            
-            resultados = inventario.filtrar_vehiculos(criterio, valor)
-            
-            if resultados:
-                for auto in resultados:
-                    print(auto)
-            else:
-                print("No se encontraron resultados.")
-
-        elif opcion == "3":
-            inventario.mostrar_inventario()
-
-        elif opcion == "4":
-            vin_eliminar = input("Ingrese el VIN del vehículo a eliminar: ")
-            inventario.eliminar_vehiculo(vin_eliminar)
-
-        elif opcion == "5":
-            print("Saliendo del sistema.")
-            break
-
-        else:
-            print("Opción inválida.")
-
-if __name__ == "__main__":
-    ejecutar_programa()
+@app.post("/auth/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Endpoint de inicio de sesión.
+    Recibe 'username' y 'password' como form-data.
+    """
+    if form_data.username != ADMIN_USERNAME or form_data.password != ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Si las credenciales son correctas
+    return {
+        "mensaje": "Inicio de sesión exitoso",
+        "usuario": form_data.username,
+        "rol": "admin"
+    }
