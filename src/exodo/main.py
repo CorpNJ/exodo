@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import Column, Integer, String, Numeric
@@ -6,7 +7,11 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from .database import get_db
 
-app = FastAPI()
+app = FastAPI(title="Exodo API")
+
+# Credenciales fijas para el administrador (por ahora)
+ADMIN_USERNAME = "Corp_Admin_2026_1403"
+ADMIN_PASSWORD = "Admin123#2026"
 
 # Configuración del modelo SQLAlchemy para la tabla 'vehiculos'
 Base = declarative_base()
@@ -32,6 +37,29 @@ class VehiculoRegistro(BaseModel):
     kilometraje: int = 0
     especificaciones: str = ""
 
+@app.get("/")
+def root():
+    return {"message": "API de Exodo funcionando. Ve a /docs para probar."}
+
+@app.post("/auth/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Endpoint de inicio de sesión.
+    Recibe 'username' y 'password' como form-data.
+    """
+    if form_data.username != ADMIN_USERNAME or form_data.password != ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return {
+        "mensaje": "Inicio de sesión exitoso",
+        "usuario": form_data.username,
+        "rol": "admin"
+    }
+
 # 1. Endpoint POST para registrar un nuevo vehículo en la base de datos (US-010)
 @app.post("/vehiculos/", status_code=status.HTTP_201_CREATED)
 def agregar_vehiculo(vehiculo: VehiculoRegistro, db: Session = Depends(get_db)):
@@ -44,7 +72,7 @@ def agregar_vehiculo(vehiculo: VehiculoRegistro, db: Session = Depends(get_db)):
         especificaciones=vehiculo.especificaciones,
         estado="Disponible"
     )
-    
+
     db.add(nuevo_vehiculo)
     db.commit()
     db.refresh(nuevo_vehiculo)
@@ -62,14 +90,14 @@ def modificar_stock(vehiculo_id: int, db: Session = Depends(get_db)):
 
     if not vehiculo:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"El vehículo con ID {vehiculo_id} no existe en el inventario."
         )
 
     # Criterio C-015b: Si el vehículo ya está vendido, bloquear la transacción
     if vehiculo.estado == "Vendido":
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Vehículo no disponible"
         )
 
