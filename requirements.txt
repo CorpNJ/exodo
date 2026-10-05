@@ -9,3 +9,5 @@ pytest-cov>=7.1.0
 python-multipart>=0.0.32
 sqlmodel>=0.0.42
 uvicorn[standard]>=0.52.4
+sqlalchemy
+python-dotenv

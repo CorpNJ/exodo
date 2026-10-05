@@ -1,19 +1,22 @@
 import os
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Cargar las variables del archivo .env
 load_dotenv()
 
-# Obtener la URL de Neon
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("Falta DATABASE_URL en el archivo .env")
 
-# Crear el motor de conexión
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Dependencia para usar en las rutas de FastAPI
+# Base única compartida por todos los modelos
+Base = declarative_base()
+
+
 def get_db():
     db = SessionLocal()
     try:
