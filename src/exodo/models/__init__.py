@@ -1,4 +1,4 @@
 from .usuario import UsuarioBD
-from .vehiculo import VehiculoBD, VehiculoRegistro
+from .vehiculo import VehiculoBD, VehiculoRegistro, VehiculoRespuesta
 
-__all__ = ["UsuarioBD", "VehiculoBD", "VehiculoRegistro"]
+__all__ = ["UsuarioBD", "VehiculoBD", "VehiculoRegistro", "VehiculoRespuesta"]
