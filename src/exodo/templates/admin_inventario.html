@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Inventario - SIVVE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gestión de Inventario (Admin)</h2>
+    <a href="/web/registro" class="btn btn-primary btn-sm">+ Nuevo Vehículo</a>
+</div>
+
+<!-- Tabla de Inventario -->
+<div class="table-responsive bg-white rounded shadow-sm border p-3">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Marca / Modelo</th>
+                <th>Año</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vehiculos %}
+            <tr>
+                <td>{{ v.id }}</td>
+                <td><strong>{{ v.marca }}</strong> {{ v.modelo }}</td>
+                <td>{{ v.anio }}</td>
+                <td>${{ "{:,.0f}".format(v.precio) }}</td>
+                <td>
+                    <span class="badge {% if v.estado == 'Disponible' %}bg-success{% elif v.estado == 'Vendido' %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ v.estado }}
+                    </span>
+                </td>
+                <td class="text-end">
+                    {% if v.estado != 'Inactivo' %}
+                    <button data-id="{{ v.id }}" onclick="cambiarEstado(this.dataset.id, 'Inactivo')" class="btn btn-outline-danger btn-sm">Desactivar</button>
+                    {% else %}
+                    <button data-id="{{ v.id }}" onclick="cambiarEstado(this.dataset.id, 'Disponible')" class="btn btn-outline-success btn-sm">Activar</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No existen registros de vehículos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

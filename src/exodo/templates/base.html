@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SIVVE - Sistema de Inventario{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+    <!-- Navegación Principal -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/web/catalogo">🚗 SIVVE</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/web/catalogo">Catálogo</a></li>
+                {% if es_admin %}
+                <li class="nav-item"><a class="nav-link" href="/web/admin/inventario">Gestión Inventario</a></li>
+                <li class="nav-item"><a class="nav-link" href="/web/admin/reportes">Reporte Ventas</a></li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                {% if es_admin %}
+                <li class="nav-item"><a class="btn btn-primary btn-sm me-2" href="/web/registro">+ Agregar Vehículo</a></li>
+                <li class="nav-item"><a class="btn btn-outline-danger btn-sm" href="/web/logout">Cerrar Sesión</a></li>
+                {% else %}
+                <li class="nav-item"><a class="btn btn-outline-light btn-sm" href="/web/login">Admin Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+    <!-- Contenido Dinámico -->
+    <main class="container my-4 flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-3 mt-auto">
+        <div class="container">
+            <p class="mb-0 small">&copy; 2026 SIVVE - Proyecto Éxodo | Sistema de Inventario y Ventas</p>
+        </div>
+    </footer>
+
+    <!-- Scripts Bootstrap y JS Propio -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+</body>
+</html>
