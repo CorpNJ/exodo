@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Ventas - SIVVE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Reporte de Ventas Registradas</h2>
+    <h4 class="text-success fw-bold">Total Ingresos: ${{ "{:,.0f}".format(total_ingresos) }}</h4>
+</div>
+
+<div class="table-responsive bg-white rounded shadow-sm border p-3">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th># Venta</th>
+                <th>Vehículo</th>
+                <th>Comprador</th>
+                <th>Documento</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reporte %}
+            <tr>
+                <td>{{ r.venta_id }}</td>
+                <td><strong>{{ r.vehiculo }}</strong></td>
+                <td>{{ r.comprador }}</td>
+                <td>{{ r.documento }}</td>
+                <td>${{ "{:,.0f}".format(r.monto) }}</td>
+                <td>{{ r.fecha }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">No se registran ventas en la base de datos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

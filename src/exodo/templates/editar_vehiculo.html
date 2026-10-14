@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Vehículo - SIVVE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 p-4 bg-white">
+            <h4 class="mb-4">Editar Vehículo #{{ vehiculo.id }}</h4>
+            <form method="POST" action="/web/admin/editar/{{ vehiculo.id }}">
+                <div class="mb-3">
+                    <label class="form-label">Marca</label>
+                    <input type="text" name="marca" class="form-control" value="{{ vehiculo.marca }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Modelo</label>
+                    <input type="text" name="modelo" class="form-control" value="{{ vehiculo.modelo }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Año</label>
+                    <input type="number" name="anio" class="form-control" value="{{ vehiculo.anio }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Precio ($)</label>
+                    <input type="number" step="0.01" name="precio" class="form-control" value="{{ vehiculo.precio }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select">
+                        <option value="Disponible" {% if vehiculo.estado == 'Disponible' %}selected{% endif %}>Disponible</option>
+                        <option value="Vendido" {% if vehiculo.estado == 'Vendido' %}selected{% endif %}>Vendido</option>
+                        <option value="Inactivo" {% if vehiculo.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

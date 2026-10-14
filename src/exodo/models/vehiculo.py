@@ -1,22 +1,25 @@
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Column, Integer, Numeric, String, Text
+from sqlalchemy import Column, Integer, Numeric, String
 
 from ..database import Base
 
 
+# Modelo SQLAlchemy (tabla)
 class VehiculoBD(Base):
     __tablename__ = "vehiculos"
 
     id = Column(Integer, primary_key=True, index=True)
-    marca = Column(String(50), nullable=False)
-    modelo = Column(String(50), nullable=False)
+    marca = Column(String(100), nullable=False)
+    modelo = Column(String(100), nullable=False)
     anio = Column(Integer, nullable=False)
     precio = Column(Numeric(12, 2), nullable=False)
     kilometraje = Column(Integer, default=0)
-    especificaciones = Column(Text, nullable=True)
-    estado = Column(String(20), default="Disponible")
+    especificaciones = Column(String(255), nullable=True)
+    estado = Column(String(50), default="Disponible")
+    fotos_url = Column(String(255), nullable=True)
 
 
+# Esquemas Pydantic
 class VehiculoRegistro(BaseModel):
     """Entrada JSON para registrar un vehiculo (US-010)."""
     marca: str = Field(min_length=1, max_length=50)
@@ -36,6 +39,7 @@ class VehiculoRespuesta(BaseModel):
     modelo: str
     anio: int
     precio: float
-    kilometraje: int | None
-    especificaciones: str | None
-    estado: str | None
+    kilometraje: int | None = 0
+    especificaciones: str | None = ""
+    estado: str | None = None
+    fotos_url: str | None = None
