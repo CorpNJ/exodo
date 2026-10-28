@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Comprar Vehículo - SIVVE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 p-4 bg-white">
+            <h4 class="mb-3">Registro de Datos para Compra</h4>
+            <div class="alert alert-info py-2">
+                Estás comprando: <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.anio }})</strong><br>
+                Monto a Pagar: <strong>${{ "{:,.0f}".format(vehiculo.precio) }}</strong>
+            </div>
+            <form method="POST" action="/web/comprar/{{ vehiculo.id }}">
+                <div class="mb-3">
+                    <label class="form-label">Nombre Completo</label>
+                    <input type="text" name="nombre" class="form-control" required placeholder="Ej: Juan Perez">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Documento de Identidad</label>
+                    <input type="text" name="documento" class="form-control" required placeholder="Ej: 1035444111">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Correo Electrónico</label>
+                    <input type="email" name="correo" class="form-control" required placeholder="comprador@correo.com">
+                </div>
+                <button type="submit" class="btn btn-success w-100">Confirmar Compra y Generar Factura</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

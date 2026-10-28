@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Catálogo de Vehículos - SIVVE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Catálogo de Vehículos</h2>
+</div>
+
+<!-- Filtros de Búsqueda (US-011) -->
+<form method="GET" action="/web/catalogo" class="row g-3 mb-4 bg-white p-3 rounded shadow-sm border">
+    <div class="col-md-5">
+        <label class="form-label fw-bold">Marca</label>
+        <input type="text" name="marca" class="form-control" placeholder="Ej: Chevrolet, Mazda..." value="{{ marca_filtro or '' }}">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Estado</label>
+        <select name="estado" class="form-select">
+            <option value="Disponible" {% if estado_filtro == 'Disponible' %}selected{% endif %}>Disponibles</option>
+            <option value="Vendido" {% if estado_filtro == 'Vendido' %}selected{% endif %}>Vendidos</option>
+            <option value="" {% if not estado_filtro %}selected{% endif %}>Todos</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+    </div>
+</form>
+
+<!-- Grid de Tarjetas de Vehículos -->
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for v in vehiculos %}
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <!-- Imagen del Vehículo o Marcador por Defecto -->
+            {% if v.fotos_url %}
+                <img src="{{ v.fotos_url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ v.marca }} {{ v.modelo }}">
+            {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center rounded-top" style="height: 200px;">
+                    <span class="text-muted fs-4">🚘 Sin Imagen</span>
+                </div>
+            {% endif %}
+
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ v.marca }} {{ v.modelo }}</h5>
+                    <span class="badge {% if v.estado == 'Disponible' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ v.estado }}
+                    </span>
+                </div>
+                <p class="card-text text-muted mb-1">Año: {{ v.anio }}</p>
+                <p class="card-text text-muted mb-3">Kilometraje: {{ v.kilometraje }} km</p>
+                <h4 class="text-primary fw-bold mb-0">${{ "{:,.0f}".format(v.precio) if v.precio is not none else '0' }}</h4>
+            </div>
+
+            <div class="card-footer bg-white border-top-0 d-flex justify-content-between gap-2">
+                <a href="/web/vehiculo/{{ v.id }}" class="btn btn-outline-secondary btn-sm flex-grow-1">Ver Detalle</a>
+                {% if v.estado == 'Disponible' %}
+                <a href="/web/comprar/{{ v.id }}" class="btn btn-success btn-sm flex-grow-1">Comprar</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted fs-5">No se encontraron vehículos registrados en el catálogo.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

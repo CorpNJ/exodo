@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Vehículo - SIVVE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 p-4 bg-white">
+            <h3 class="mb-4">Registrar Nuevo Vehículo</h3>
+            <form method="POST" action="/web/registro" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Marca</label>
+                        <input type="text" name="marca" class="form-control" required placeholder="Ej: Toyota">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Modelo</label>
+                        <input type="text" name="modelo" class="form-control" required placeholder="Ej: Corolla">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Año</label>
+                        <input type="number" name="anio" class="form-control" required value="2023">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Precio ($)</label>
+                        <input type="number" step="0.01" name="precio" class="form-control" required placeholder="0.00">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Kilometraje</label>
+                        <input type="number" name="kilometraje" class="form-control" value="0">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Especificaciones Técnicas</label>
+                        <textarea name="especificaciones" class="form-control" rows="3" placeholder="Motor, transmisión, accesorios..."></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Foto del Vehículo</label>
+                        <input type="file" name="foto" class="form-control" accept="image/*">
+                    </div>
+                    <div class="col-12 text-end mt-4">
+                        <a href="/web/catalogo" class="btn btn-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar Vehículo</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Ventas y Gráficos - SIVVE{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <h2>Reporte de Ventas e Ingresos</h2>
+    
+    <!-- Filtro Amigable por Mes (Nombre) y Año -->
+    <form method="GET" action="/web/admin/reportes" class="d-flex gap-2 align-items-center">
+        <!-- Selector de Mes por Nombre -->
+        <select name="mes" class="form-select">
+            {% for m in lista_meses %}
+            <option value="{{ m.num }}" {% if m.num == mes_actual %}selected{% endif %}>
+                {{ m.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- Selector de Año -->
+        <select name="anio" class="form-select">
+            {% for a in lista_anios %}
+            <option value="{{ a }}" {% if a == anio_actual %}selected{% endif %}>
+                {{ a }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+</div>
+
+<!-- Tarjetas Resumen -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-success text-white p-3 shadow-sm border-0 mb-3 mb-md-0">
+            <h6>Total Ingresos del Período</h6>
+            <h3 class="fw-bold mb-0">${{ "{:,.0f}".format(total_ingresos) }}</h3>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-primary text-white p-3 shadow-sm border-0">
+            <h6>Total Vehículos Vendidos</h6>
+            <h3 class="fw-bold mb-0">{{ total_ventas }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Ingresos -->
+<div class="card shadow-sm border-0 p-4 mb-4 bg-white">
+    <h5 class="card-title mb-3 fw-bold">Gráfico de Ingresos Mensuales ({{ anio_actual }})</h5>
+    <canvas id="graficoIngresos" 
+            data-labels="{{ grafico_labels | tojson | forceescape }}"
+            data-valores="{{ grafico_data | tojson | forceescape }}"
+            style="max-height: 300px;"></canvas>
+</div>
+
+<!-- Tabla de Resultados -->
+<div class="table-responsive bg-white rounded shadow-sm border p-3">
+    <h5 class="fw-bold mb-3">Detalle de Transacciones</h5>
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th># Venta</th>
+                <th>Vehículo</th>
+                <th>Vendedor / Registrado por</th>
+                <th>Monto Total</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reporte %}
+            <tr>
+                <td>{{ r.venta_id }}</td>
+                <td><strong>{{ r.vehiculo }}</strong></td>
+                <td>{{ r.vendedor }}</td>
+                <td>${{ "{:,.0f}".format(r.monto) }}</td>
+                <td>{{ r.fecha }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    No se registran ventas para este mes/año en la base de datos.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const canvas = document.getElementById('graficoIngresos');
+    if (canvas) {
+        const labels = JSON.parse(canvas.dataset.labels);
+        const dataValues = JSON.parse(canvas.dataset.valores);
+
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ingresos Mensuales ($)',
+                    data: dataValues,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

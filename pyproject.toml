@@ -1,0 +1,21 @@
+[project]
+name = "exodo"
+version = "0.1.0"
+description = "SIVVE - Sistema de Inventario y Venta de Vehículos"
+readme = "README.md"
+authors = [
+    { name = "KIRAMA", email = "johan.quirama@upb.edu.co" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
+    "sqlalchemy",
+    "psycopg[binary]>=3.3.5",
+    "python-dotenv",
+    "python-multipart>=0.0.32",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"

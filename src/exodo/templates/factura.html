@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Factura {{ factura.codigo_factura }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow border-0 p-5 bg-white" id="seccion-factura">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <h2>🚗 SIVVE - Factura de Venta</h2>
+                <span class="badge bg-success fs-6">{{ factura.codigo_factura }}</span>
+            </div>
+            <div class="row mb-4">
+                <div class="col-6">
+                    <h6 class="text-muted">DATOS DEL COMPRADOR:</h6>
+                    <p class="mb-1"><strong>Nombre:</strong> {{ comprador.nombre }}</p>
+                    <p class="mb-1"><strong>Documento:</strong> {{ comprador.documento }}</p>
+                    <p class="mb-1"><strong>Correo:</strong> {{ comprador.correo }}</p>
+                </div>
+                <div class="col-6 text-end">
+                    <h6 class="text-muted">DETALLES FACTURA:</h6>
+                    <p class="mb-1"><strong>Fecha:</strong> {{ factura.fecha_emision.strftime('%Y-%m-%d %H:%M') if factura.fecha_emision else '' }}</p>
+                    <p class="mb-1"><strong>Estado:</strong> Pagada / Registrada en BD</p>
+                </div>
+            </div>
+            <table class="table table-bordered mb-4">
+                <thead class="table-light">
+                    <tr>
+                        <th>Vehículo</th>
+                        <th>Año</th>
+                        <th>Precio Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ vehiculo.marca }} {{ vehiculo.modelo }}</td>
+                        <td>{{ vehiculo.anio }}</td>
+                        <td>${{ "{:,.0f}".format(factura.monto) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="text-center mt-4">
+                <button onclick="window.print()" class="btn btn-primary me-2">🖨️ Imprimir Factura / Guardar PDF</button>
+                <a href="/web/catalogo" class="btn btn-outline-secondary">Volver al Catálogo</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
