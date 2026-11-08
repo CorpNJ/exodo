@@ -9,8 +9,7 @@
     <h2 class="fw-bold text-dark mb-0">📈 Reporte de Ventas e Ingresos</h2>
     
     <div class="d-flex gap-2">
-        <!-- Formulario de Filtro por Mes y Año -->
-        <form method="GET" action="/web/admin/reporte_ventas" class="d-flex gap-2">
+        <form method="GET" action="/web/admin/reportes" class="d-flex gap-2">
             <select name="mes" class="form-select">
                 {% for m in lista_meses %}
                 <option value="{{ m.num }}" {% if m.num == mes_actual %}selected{% endif %}>
@@ -32,7 +31,6 @@
     </div>
 </div>
 
-<!-- Tarjetas Resumen -->
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card bg-success text-white p-3 shadow-sm border-0 rounded-3">
@@ -48,7 +46,6 @@
     </div>
 </div>
 
-<!-- Renderizado del Gráfico de Barras -->
 <div class="card shadow-sm border-0 p-4 mb-4 bg-white rounded-3">
     <h5 class="card-title mb-3 fw-bold">Gráfico de Ingresos Mensuales ({{ anio_actual }})</h5>
     <canvas id="graficoIngresos" 
@@ -57,7 +54,6 @@
             style="max-height: 300px;"></canvas>
 </div>
 
-<!-- Tabla Detallada de Transacciones -->
 <div class="table-responsive bg-white rounded-3 shadow-sm border p-3">
     <h5 class="fw-bold mb-3">Detalle de Transacciones</h5>
     <table class="table table-hover align-middle mb-0">
@@ -82,19 +78,16 @@
                 <td><strong class="text-success">${{ "{:,.0f}".format(r.monto) }}</strong></td>
                 <td>{{ r.fecha }}</td>
                 <td class="text-end">
-                    <!-- Botón Modificar Venta -->
                     <button type="button" class="btn btn-outline-warning btn-sm fw-bold me-1" data-bs-toggle="modal" data-bs-target="#modalEditarVenta{{ r.venta_id }}">
                         ✏️ Editar
                     </button>
 
-                    <!-- Botón Eliminar Venta -->
-                    <form method="POST" action="/web/admin/venta/eliminar/{{ r.venta_id }}" class="d-inline">
+                    <form method="POST" action="/web/admin/venta/eliminar/{{ r.venta_id }}" class="d-inline" onsubmit="return confirm('¿Está seguro de eliminar esta venta y su factura?');">
                         <button type="submit" class="btn btn-outline-danger btn-sm fw-bold">🗑️ Eliminar</button>
                     </form>
                 </td>
             </tr>
 
-            <!-- Modal para Modificar Venta {{ r.venta_id }} -->
             <div class="modal fade" id="modalEditarVenta{{ r.venta_id }}" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content border-0 shadow">

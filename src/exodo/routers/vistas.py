@@ -17,12 +17,11 @@ router = APIRouter(prefix="/web", tags=["Frontend Web"])
 templates = Jinja2Templates(directory="src/exodo/templates")
 
 
-# Auxiliar para verificar autenticación de Admin vía Cookies de sesión
 def es_admin(request: Request) -> bool:
     return request.cookies.get("session_role") == "admin"
 
 
-# 1. Catálogo Público (US-011, US-026)
+# 1. Catálogo Público (US-011)
 @router.get("/catalogo", response_class=HTMLResponse)
 def ver_catalogo(request: Request, marca: str = None, estado: str = "Disponible", db: Session = Depends(get_db)):
     query = db.query(VehiculoBD).filter(VehiculoBD.estado != "Inactivo")
@@ -44,7 +43,7 @@ def ver_catalogo(request: Request, marca: str = None, estado: str = "Disponible"
     )
 
 
-# 2. Vista de Detalle del Vehículo (US-027)
+# 2. Vista de Detalle (US-027)
 @router.get("/vehiculo/{vehiculo_id}", response_class=HTMLResponse)
 def ver_detalle(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
     vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
@@ -61,7 +60,7 @@ def ver_detalle(request: Request, vehiculo_id: int, db: Session = Depends(get_db
     )
 
 
-# 3. Autenticación: Login y Logout (US-023)
+# 3. Autenticación Admin
 @router.get("/login", response_class=HTMLResponse)
 def vista_login(request: Request):
     return templates.TemplateResponse(request, "login.html", {"error": None, "es_admin": es_admin(request)})
@@ -99,7 +98,7 @@ def cerrar_sesion():
     return response
 
 
-# 4. Formulario de Registro de Comprador (Flujo Comprador Web US-024)
+# 4. Formulario de Registro de Comprador
 @router.get("/comprar/{vehiculo_id}", response_class=HTMLResponse)
 def vista_registro_comprador(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
     vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
@@ -116,7 +115,7 @@ def vista_registro_comprador(request: Request, vehiculo_id: int, db: Session = D
     )
 
 
-# 5. Procesar Compra Web y Generar Factura (Flujo Comprador - US-015, US-024)
+# 5. Procesar Compra, Registrar Venta y Generar Factura
 @router.post("/comprar/{vehiculo_id}")
 def procesar_compra(
     vehiculo_id: int,
@@ -126,7 +125,6 @@ def procesar_compra(
     db: Session = Depends(get_db)
 ):
     try:
-        # A. Crear o reusar comprador en BD
         comprador = db.query(UsuarioBD).filter((UsuarioBD.correo == correo) | (UsuarioBD.documento == documento)).first()
         if not comprador:
             comprador = UsuarioBD(
@@ -139,14 +137,12 @@ def procesar_compra(
             db.commit()
             db.refresh(comprador)
 
-        # B. Obtener vehículo
         vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
         if not vehiculo:
             return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)
 
         vehiculo.estado = "Vendido"
 
-        # C. Crear o actualizar la Venta
         venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo.id).first()
         if not venta:
             venta = VentaBD(
@@ -163,7 +159,6 @@ def procesar_compra(
             venta.monto_total = vehiculo.precio
             db.commit()
 
-        # D. Crear o actualizar la Factura
         factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
         if not factura:
             codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
@@ -177,7 +172,6 @@ def procesar_compra(
             db.commit()
             db.refresh(factura)
 
-        # E. Redirigir a la vista oficial de la factura
         return RedirectResponse(url=f"/web/factura/{factura.id}", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
         db.rollback()
@@ -185,7 +179,7 @@ def procesar_compra(
         return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 6. Ver Factura Directa por Factura ID (MUESTRA LA FACTURA ASOCIADA)
+# 6. Ver Factura por Factura ID
 @router.get("/factura/{factura_id}", response_class=HTMLResponse)
 def ver_factura(request: Request, factura_id: int, db: Session = Depends(get_db)):
     factura = db.query(FacturaBD).filter(FacturaBD.id == factura_id).first()
@@ -209,7 +203,7 @@ def ver_factura(request: Request, factura_id: int, db: Session = Depends(get_db)
     )
 
 
-# 7. Botón 'Ver Factura' desde Inventario (Consulta Venta/Factura existente y la despliega)
+# 7. Redirección de Factura desde Inventario
 @router.get("/admin/factura_vehiculo/{vehiculo_id}")
 def ver_factura_por_vehiculo(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
     if not es_admin(request):
@@ -217,7 +211,6 @@ def ver_factura_por_vehiculo(request: Request, vehiculo_id: int, db: Session = D
 
     venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo_id).first()
     if not venta:
-        # Si por alguna razón no tiene venta, la crea automáticamente para asegurar la factura
         admin_user = db.query(UsuarioBD).filter(UsuarioBD.rol == "admin").first()
         comprador_id = admin_user.id if admin_user else 1
         vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
@@ -239,7 +232,7 @@ def ver_factura_por_vehiculo(request: Request, vehiculo_id: int, db: Session = D
     return RedirectResponse(url=f"/web/factura/{factura.id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 8. Panel Administrativo de Inventario (US-031)
+# 8. Inventario Admin
 @router.get("/admin/inventario", response_class=HTMLResponse)
 def vista_admin_inventario(request: Request, db: Session = Depends(get_db)):
     if not es_admin(request):
@@ -307,7 +300,7 @@ def procesar_registro_vehiculo(
     return RedirectResponse(url="/web/admin/inventario", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 10. Editar Ficha Técnica y Estado del Vehículo (CORREGIDO: GUARDA VENTA Y FACTURA AUTOMÁTICAMENTE EN BD)
+# 10. Editar Ficha Técnica y Estado
 @router.get("/admin/editar/{vehiculo_id}", response_class=HTMLResponse)
 def vista_editar_vehiculo(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
     if not es_admin(request):
@@ -358,7 +351,6 @@ def procesar_editar_vehiculo(
                     shutil.copyfileobj(foto.file, buffer)
                 vehiculo.fotos_url = f"/static/img/{nombre_foto}"
 
-            # REGISTRO AUTOMÁTICO EN BASE DE DATOS CUANDO EL ADMIN PASA A 'VENDIDO'
             if estado == "Vendido" and estado_anterior != "Vendido":
                 venta_existente = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo.id).first()
                 if not venta_existente:
@@ -421,7 +413,7 @@ def eliminar_vehiculo_completo(request: Request, vehiculo_id: int, db: Session =
     return RedirectResponse(url="/web/admin/inventario", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 12. Reporte de Ventas Mensuales (US-022, US-030)
+# 12. Reporte de Ventas Mensuales
 @router.get("/admin/reportes", response_class=HTMLResponse)
 @router.get("/admin/reporte_ventas", response_class=HTMLResponse)
 def vista_reporte_ventas(request: Request, mes: str = None, anio: str = None, db: Session = Depends(get_db)):
@@ -505,3 +497,109 @@ def vista_reporte_ventas(request: Request, mes: str = None, anio: str = None, db
             "es_admin": True
         }
     )
+
+
+# 13. Editar Venta
+@router.post("/admin/venta/editar/{venta_id}")
+def editar_venta(
+    request: Request,
+    venta_id: int,
+    vehiculo_id: int = Form(...),
+    nombre: str = Form(...),
+    documento: str = Form(...),
+    correo: str = Form(...),
+    monto: float = Form(...),
+    fecha: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if not es_admin(request):
+        return RedirectResponse(url="/web/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    try:
+        venta = db.query(VentaBD).filter(VentaBD.id == venta_id).first()
+        if venta:
+            if venta.vehiculo_id != vehiculo_id:
+                vehiculo_anterior = db.query(VehiculoBD).filter(VehiculoBD.id == venta.vehiculo_id).first()
+                if vehiculo_anterior:
+                    vehiculo_anterior.estado = "Disponible"
+
+                vehiculo_nuevo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
+                if vehiculo_nuevo:
+                    vehiculo_nuevo.estado = "Vendido"
+
+                venta.vehiculo_id = vehiculo_id
+
+            comprador = db.query(UsuarioBD).filter(UsuarioBD.id == venta.comprador_id).first()
+            if comprador:
+                comprador.nombre = nombre
+                comprador.documento = documento
+                comprador.correo = correo
+            else:
+                comprador = UsuarioBD(nombre=nombre, documento=documento, correo=correo, rol="comprador")
+                db.add(comprador)
+                db.flush()
+                venta.comprador_id = comprador.id
+
+            try:
+                if "T" in fecha:
+                    fecha_parsed = datetime.strptime(fecha, "%Y-%m-%dT%H:%M")
+                else:
+                    fecha_parsed = datetime.strptime(fecha, "%Y-%m-%d")
+            except ValueError:
+                fecha_parsed = venta.fecha_venta or datetime.now()
+
+            monto_validado = min(abs(monto), 999999999.0)
+            venta.monto_total = monto_validado
+            venta.fecha_venta = fecha_parsed
+
+            factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
+            if factura:
+                factura.monto = monto_validado
+                factura.fecha_emision = fecha_parsed
+            else:
+                codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
+                factura = FacturaBD(
+                    venta_id=venta.id,
+                    codigo_factura=codigo_factura,
+                    monto=monto_validado,
+                    fecha_emision=fecha_parsed
+                )
+                db.add(factura)
+
+            db.commit()
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error al editar venta {venta_id}: {e}")
+
+    return RedirectResponse(url="/web/admin/reportes", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# 14. ELIMINAR VENTA Y FACTURA (SOPORTA PETICIONES POST Y GET DE FORMA SEGURA)
+@router.api_route("/admin/venta/eliminar/{venta_id}", methods=["GET", "POST"])
+def eliminar_venta(request: Request, venta_id: int, db: Session = Depends(get_db)):
+    if not es_admin(request):
+        return RedirectResponse(url="/web/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    try:
+        venta = db.query(VentaBD).filter(VentaBD.id == venta_id).first()
+        if venta:
+            # A. Eliminar factura asociada primero
+            factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
+            if factura:
+                db.delete(factura)
+                db.flush()
+
+            # B. Restaurar vehículo a estado Disponible
+            vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == venta.vehiculo_id).first()
+            if vehiculo:
+                vehiculo.estado = "Disponible"
+
+            # C. Eliminar la venta
+            db.delete(venta)
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error al eliminar la venta {venta_id}: {e}")
+
+    return RedirectResponse(url="/web/admin/reportes", status_code=status.HTTP_303_SEE_OTHER)
