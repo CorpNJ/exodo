@@ -1,24 +1,27 @@
-# SIVVE - Sistema de Inventario y Venta de Vehículos
+# 🚗 Éxodo - Sistema Integrado de Venta de Vehículos (SIVVE)
 
-Plataforma web para la gestión centralizada de catálogo, control de stock en tiempo real, administración de ventas y generación automática de facturas para concesionarios de vehículos.
+Éxodo (SIVVE) es una plataforma web desarrollada con FastAPI, Jinja2 y PostgreSQL para la gestión integral del inventario de vehículos usados, registro directo de compradores, emisión de facturas y visualización de reportes de ventas con gráficos analíticos para administradores.
 
-## Integrantes del Equipo
-* Johan Quirama Acevedo
-* Juan José Vélez Arias
-* Nicolás Gómez
+## 👥 Integrantes del Equipo
+* **Juan José Vélez Arias** - Código: *(Tu código)*
+* *(Nombre Integrante 2)* - Código: *(Código)*
+* *(Nombre Integrante 3)* - Código: *(Código)*
 
-## Tecnologías y Versiones
-* Python 3.12 / FastAPI 0.110.0
-* SQLAlchemy 2.0 / PostgreSQL 16 (o Neon PostgreSQL)
-* Docker & Docker Compose
-* HTML5, Jinja2, Bootstrap 5, Chart.js
-* Tablero GitHub Projects: [Tablero SIVVE](https://github.com/orgs/CorpNJ/projects/1)
+## 🛠️ Tecnologías Utilizadas
+* **Backend & Web:** Python 3.11 / FastAPI / Jinja2 / SQLAlchemy ORM
+* **Base de Datos:** PostgreSQL 18 (Neon Cloud)
+* **Interfaz Grafica:** HTML5 / Bootstrap 5 / JavaScript (ES6) / Chart.js
+* **Contenerización:** Docker & Docker Compose
+* **Gestión del Proyecto:** [Tablero en GitHub Projects](https://github.com/orgs/CorpNJ/projects) *(Ajustar enlace)*
 
-## Instrucciones de Despliegue con Docker
+---
 
-Para levantar todo el sistema desde un clon limpio (backend, frontend y base de datos):
+## 🚀 Instrucciones de Ejecución con Docker
 
+### Prerrequisitos
+* Tener instalado Docker Desktop y Docker Compose.
+
+### Paso 1: Clonar el repositorio
 ```bash
 git clone [https://github.com/CorpNJ/exodo.git](https://github.com/CorpNJ/exodo.git)
 cd exodo
-docker compose up -d --build
