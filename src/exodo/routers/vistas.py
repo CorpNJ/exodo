@@ -443,8 +443,7 @@ def vista_reporte_ventas(request: Request, mes: str = None, anio: str = None, db
         }
     )
 
-
-# 12. Registrar Venta Manualmente (Solo Admin)
+# 12. Registrar Venta Manualmente (Solo Admin - US-015, US-022)
 @router.post("/admin/venta/crear")
 def crear_venta_manual(
     request: Request,
@@ -460,6 +459,7 @@ def crear_venta_manual(
         return RedirectResponse(url="/web/login", status_code=status.HTTP_303_SEE_OTHER)
 
     try:
+        # A. Crear o actualizar datos del comprador
         comprador = db.query(UsuarioBD).filter((UsuarioBD.correo == correo) | (UsuarioBD.documento == documento)).first()
         if not comprador:
             comprador = UsuarioBD(
@@ -477,6 +477,7 @@ def crear_venta_manual(
             comprador.correo = correo
             db.commit()
 
+        # B. Parsear la fecha seleccionada en el formulario
         try:
             if "T" in fecha:
                 fecha_parsed = datetime.strptime(fecha, "%Y-%m-%dT%H:%M")
@@ -485,12 +486,14 @@ def crear_venta_manual(
         except ValueError:
             fecha_parsed = datetime.now()
 
+        # C. CAMBIO CLAVE: Cambiar el estado del vehículo a "Vendido" (Para quitarlo del Catálogo)
         vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
         if vehiculo:
             vehiculo.estado = "Vendido"
 
         monto_validado = min(abs(monto), 9999999999.0)
 
+        # D. Registrar o actualizar la venta en la tabla ventas
         venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo_id).first()
         if not venta:
             venta = VentaBD(
@@ -508,6 +511,7 @@ def crear_venta_manual(
             venta.fecha_venta = fecha_parsed
             db.commit()
 
+        # E. Generar o actualizar la factura oficial en la tabla facturas
         factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
         if not factura:
             codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
