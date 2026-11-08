@@ -116,7 +116,7 @@ def vista_registro_comprador(request: Request, vehiculo_id: int, db: Session = D
     )
 
 
-# 5. Procesar Compra, Registro del Comprador y Generación de Factura (US-015, US-024)
+# 5. Procesar Compra, Registro del Comprador, Actualización de BD y Generación de Factura (US-015, US-024)[cite: 11]
 @router.post("/comprar/{vehiculo_id}")
 def procesar_compra(
     vehiculo_id: int,
@@ -126,6 +126,7 @@ def procesar_compra(
     db: Session = Depends(get_db)
 ):
     try:
+        # A. Registrar o reutilizar usuario comprador[cite: 11]
         comprador = db.query(UsuarioBD).filter((UsuarioBD.correo == correo) | (UsuarioBD.documento == documento)).first()
         if not comprador:
             comprador = UsuarioBD(
@@ -138,12 +139,14 @@ def procesar_compra(
             db.commit()
             db.refresh(comprador)
 
+        # B. Verificar que el vehículo esté disponible[cite: 11]
         vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id, VehiculoBD.estado == "Disponible").first()
         if not vehiculo:
             return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)
 
-        vehiculo.estado = "Vendido"
+        vehiculo.estado = "Vendido"[cite: 11]
 
+        # C. Crear o actualizar registro de venta[cite: 11]
         venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo.id).first()
         if not venta:
             venta = VentaBD(
@@ -160,9 +163,10 @@ def procesar_compra(
             venta.monto_total = vehiculo.precio
             db.commit()
 
+        # D. Crear o actualizar factura asociada[cite: 11]
         factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
         if not factura:
-            codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
+            codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"[cite: 11]
             factura = FacturaBD(
                 venta_id=venta.id,
                 codigo_factura=codigo_factura,
@@ -173,23 +177,23 @@ def procesar_compra(
             db.commit()
             db.refresh(factura)
 
-        return RedirectResponse(url=f"/web/factura/{factura.id}", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url=f"/web/factura/{factura.id}", status_code=status.HTTP_303_SEE_OTHER)[cite: 11]
     except Exception as e:
         db.rollback()
         print(f"Error procesando compra: {e}")
         return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 6. Ver Factura por Factura ID (US-015)
+# 6. Ver Factura por ID de Factura (US-015)[cite: 11]
 @router.get("/factura/{factura_id}", response_class=HTMLResponse)
 def ver_factura(request: Request, factura_id: int, db: Session = Depends(get_db)):
-    factura = db.query(FacturaBD).filter(FacturaBD.id == factura_id).first()
+    factura = db.query(FacturaBD).filter(FacturaBD.id == factura_id).first()[cite: 11]
     if not factura:
-        return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)[cite: 11]
 
-    venta = db.query(VentaBD).filter(VentaBD.id == factura.venta_id).first()
-    vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == venta.vehiculo_id).first() if venta else None
-    comprador = db.query(UsuarioBD).filter(UsuarioBD.id == venta.comprador_id).first() if venta else None
+    venta = db.query(VentaBD).filter(VentaBD.id == factura.venta_id).first()[cite: 11]
+    vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == venta.vehiculo_id).first() if venta else None[cite: 11]
+    comprador = db.query(UsuarioBD).filter(UsuarioBD.id == venta.comprador_id).first() if venta else None[cite: 11]
 
     return templates.TemplateResponse(
         request,
@@ -201,10 +205,10 @@ def ver_factura(request: Request, factura_id: int, db: Session = Depends(get_db)
             "comprador": comprador,
             "es_admin": es_admin(request)
         }
-    )
+    )[cite: 11]
 
 
-# 7. Ver Factura por Vehículo ID (Redirección desde Inventario Admin)
+# 7. Endpoint Auxiliar: Buscar Factura por ID de Vehículo (Desde Admin Inventario)
 @router.get("/admin/factura_vehiculo/{vehiculo_id}")
 def ver_factura_por_vehiculo(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
     if not es_admin(request):
@@ -398,7 +402,7 @@ def vista_reporte_ventas(request: Request, mes: str = None, anio: str = None, db
     try:
         anio_select = int(anio) if anio and str(anio).strip() != "" else ahora.year
     except ValueError:
-        anio_select = ahora.year
+        anio_select = meahora.year if 'meahora' in locals() else ahora.year
 
     ventas = db.query(VentaBD).filter(
         extract('month', VentaBD.fecha_venta) == mes_select,

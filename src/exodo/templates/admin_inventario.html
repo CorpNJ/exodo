@@ -41,15 +41,19 @@
                     </span>
                 </td>
                 <td class="text-end">
-                    <a href="/web/admin/editar/{{ v.id }}" class="btn btn-outline-primary btn-sm me-1 fw-semibold">Editar</a>
-                    
-                    {% if v.estado == 'Vendido' %}
-                    <a href="/web/factura/{{ v.id }}" class="btn btn-outline-info btn-sm me-1 fw-semibold">Ver Factura</a>
-                    {% endif %}
+                    <!-- Botón para Editar Ficha Técnica -->
+                    <a href="/web/admin/editar/{{ v.id }}" class="btn btn-outline-primary btn-sm me-1">Editar</a>
 
-                    <form method="POST" action="/web/admin/eliminar/{{ v.id }}" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">Eliminar</button>
-                    </form>
+                    <!-- Botón para Ver Factura Real -->
+                        {% if v.estado == 'Vendido' %}
+                        <a href="/web/admin/factura_vehiculo/{{ v.id }}" class="btn btn-outline-info btn-sm me-1">Ver Factura</a>
+                        {% endif %}
+                        <!-- Botón para Cambiar Estado / Desactivar -->
+                    {% if v.estado != 'Inactivo' %}
+                    <button data-id="{{ v.id }}" onclick="cambiarEstado(this.dataset.id, 'Inactivo')" class="btn btn-outline-danger btn-sm">Desactivar</button>
+                    {% else %}
+                    <button data-id="{{ v.id }}" onclick="cambiarEstado(this.dataset.id, 'Disponible')" class="btn btn-outline-success btn-sm">Activar</button>
+                    {% endif %}
                 </td>
             </tr>
             {% else %}
