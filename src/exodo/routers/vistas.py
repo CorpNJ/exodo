@@ -62,16 +62,32 @@ def ver_detalle(request: Request, vehiculo_id: int, db: Session = Depends(get_db
 
 
 # 3. Autenticación: Login y Logout de Administrador (US-023)
+# GET: Muestra la pantalla del formulario de inicio de sesión
 @router.get("/login", response_class=HTMLResponse)
 def vista_login(request: Request):
     return templates.TemplateResponse(request, "login.html", {"error": None, "es_admin": es_admin(request)})
 
-
+# POST: Recibe las credenciales enviadas desde el formulario
 @router.post("/login", response_class=HTMLResponse)
-def procesar_login(request: Request, correo: str = Form(...), contrasena: str = Form(...), db: Session = Depends(get_db)):
-    usuario = db.query(UsuarioBD).filter(UsuarioBD.correo == correo, UsuarioBD.contrasena_hash == contrasena, UsuarioBD.rol == "admin").first()
+def procesar_login(
+    request: Request, 
+    correo: str = Form(...), 
+    contrasena: str = Form(...), 
+    db: Session = Depends(get_db)
+):
+    # Validar contra la base de datos o variables de entorno
+    usuario = db.query(UsuarioBD).filter(
+        UsuarioBD.correo == correo, 
+        UsuarioBD.contrasena_hash == contrasena, 
+        UsuarioBD.rol == "admin"
+    ).first()
+    
     if not usuario:
-        return templates.TemplateResponse(request, "login.html", {"error": "Credenciales inválidas o no autorizadas.", "es_admin": False})
+        return templates.TemplateResponse(
+            request, 
+            "login.html", 
+            {"error": "Credenciales inválidas o no autorizadas.", "es_admin": False}
+        )
 
     response = RedirectResponse(url="/web/admin/inventario", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="session_role", value="admin", httponly=True)
