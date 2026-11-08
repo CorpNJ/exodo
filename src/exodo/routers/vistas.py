@@ -286,7 +286,7 @@ def procesar_editar_vehiculo(
     modelo: str = Form(...),
     anio: int = Form(...),
     precio: float = Form(...),
-    kilometraje: int = Form(...),
+    kilometraje: int = Form(0),  # <-- CAMBIO CLAVE: Form(0) en lugar de Form(...) para hacerlo opcional
     especificaciones: str = Form(""),
     estado: str = Form(...),
     foto: UploadFile = File(None),
@@ -321,8 +321,6 @@ def procesar_editar_vehiculo(
         print(f"Error editando vehiculo {vehiculo_id}: {e}")
 
     return RedirectResponse(url="/web/admin/inventario", status_code=status.HTTP_303_SEE_OTHER)
-
-
 # 10. Eliminar Vehículo de Forma Segura (Solo Admin)
 @router.post("/admin/eliminar/{vehiculo_id}")
 def eliminar_vehiculo_completo(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
