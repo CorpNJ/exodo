@@ -1,31 +1,31 @@
 # -------------------------------------------------------------
-# Dockerfile optimizado para FastAPI y Render / Docker Compose
+# Dockerfile optimizado para FastAPI, PostgreSQL y Render
 # -------------------------------------------------------------
 FROM python:3.12-slim
 
-# Evitar que Python escriba archivos .pyc y forzar salida sin buffer
+# Evitar archivos .pyc y forzar salida inmediata en consola
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias
+# Instalar dependencias esenciales del sistema operativo
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt-get/lists/*
 
-# Copiar e instalar requerimientos de Python
+# Copiar e instalar las librerías de Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código de la aplicación
+# Copiar el código fuente del proyecto
 COPY src ./src
 
-# Crear la estructura de carpetas estáticas para imágenes de vehículos
+# Crear físicamente las carpetas estáticas requeridas para las imágenes
 RUN mkdir -p /app/src/exodo/static/img
 
-# Crear usuario no-root por seguridad
+# Configurar usuario no-root por seguridad en producción
 RUN useradd --create-home --uid 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
