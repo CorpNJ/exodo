@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    ports:
+      - "6001:6001"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-Corp_Admin_2026_1403}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123#2026}
+    restart: always
