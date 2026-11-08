@@ -9,10 +9,6 @@
     <h2 class="fw-bold text-dark mb-0">📈 Reporte de Ventas e Ingresos</h2>
     
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearVenta">
-            + Registrar Venta Manual
-        </button>
-
         <!-- Formulario de Filtro por Mes y Año -->
         <form method="GET" action="/web/admin/reporte_ventas" class="d-flex gap-2">
             <select name="mes" class="form-select">
@@ -163,61 +159,6 @@
             {% endfor %}
         </tbody>
     </table>
-</div>
-
-<!-- Modal para Crear Venta Manual -->
-<div class="modal fade" id="modalCrearVenta" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold">➕ Registrar Venta Manual</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="/web/admin/venta/crear">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Seleccionar Vehículo</label>
-                        <select name="vehiculo_id" class="form-select" required>
-                            {% for v in todos_vehiculos %}
-                            <option value="{{ v.id }}">#{{ v.id }} - {{ v.marca }} {{ v.modelo }} ({{ v.anio }}) - Status: {{ v.estado }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nombre del Comprador</label>
-                        <input type="text" name="nombre" class="form-control" required placeholder="Ej: Carlos Ramírez">
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">Documento</label>
-                            <input type="text" name="documento" class="form-control" required placeholder="10203040">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">Correo</label>
-                            <input type="email" name="correo" class="form-control" required placeholder="carlos@correo.com">
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">Monto Total ($)</label>
-                            <input type="number" step="0.01" name="monto" class="form-control" required placeholder="125000000">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">Fecha de Venta</label>
-                            <input type="datetime-local" name="fecha" class="form-control" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold">Guardar Venta</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
 
 <script>

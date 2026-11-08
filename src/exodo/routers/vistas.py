@@ -116,7 +116,7 @@ def vista_registro_comprador(request: Request, vehiculo_id: int, db: Session = D
     )
 
 
-# 5. Procesar Compra, Registro del Comprador, Actualización de BD y Generación de Factura (US-015, US-024)
+# 5. Procesar Compra, Registro del Comprador y Generación de Factura (US-015, US-024)
 @router.post("/comprar/{vehiculo_id}")
 def procesar_compra(
     vehiculo_id: int,
@@ -144,35 +144,43 @@ def procesar_compra(
 
         vehiculo.estado = "Vendido"
 
-        nueva_venta = VentaBD(
-            vehiculo_id=vehiculo.id,
-            comprador_id=comprador.id,
-            monto_total=vehiculo.precio,
-            fecha_venta=datetime.now()
-        )
-        db.add(nueva_venta)
-        db.commit()
-        db.refresh(nueva_venta)
+        venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo.id).first()
+        if not venta:
+            venta = VentaBD(
+                vehiculo_id=vehiculo.id,
+                comprador_id=comprador.id,
+                monto_total=vehiculo.precio,
+                fecha_venta=datetime.now()
+            )
+            db.add(venta)
+            db.commit()
+            db.refresh(venta)
+        else:
+            venta.comprador_id = comprador.id
+            venta.monto_total = vehiculo.precio
+            db.commit()
 
-        codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
-        nueva_factura = FacturaBD(
-            venta_id=nueva_venta.id,
-            codigo_factura=codigo_factura,
-            monto=vehiculo.precio,
-            fecha_emision=datetime.now()
-        )
-        db.add(nueva_factura)
-        db.commit()
-        db.refresh(nueva_factura)
+        factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
+        if not factura:
+            codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
+            factura = FacturaBD(
+                venta_id=venta.id,
+                codigo_factura=codigo_factura,
+                monto=vehiculo.precio,
+                fecha_emision=datetime.now()
+            )
+            db.add(factura)
+            db.commit()
+            db.refresh(factura)
 
-        return RedirectResponse(url=f"/web/factura/{nueva_factura.id}", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url=f"/web/factura/{factura.id}", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
         db.rollback()
         print(f"Error procesando compra: {e}")
         return RedirectResponse(url="/web/catalogo", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 6. Ver Factura de Venta Generada (US-015)
+# 6. Ver Factura por Factura ID (US-015)
 @router.get("/factura/{factura_id}", response_class=HTMLResponse)
 def ver_factura(request: Request, factura_id: int, db: Session = Depends(get_db)):
     factura = db.query(FacturaBD).filter(FacturaBD.id == factura_id).first()
@@ -196,7 +204,7 @@ def ver_factura(request: Request, factura_id: int, db: Session = Depends(get_db)
     )
 
 
-# 7. Buscar Factura por ID de Vehículo (Redirección desde Admin Inventario)
+# 7. Ver Factura por Vehículo ID (Redirección desde Inventario Admin)
 @router.get("/admin/factura_vehiculo/{vehiculo_id}")
 def ver_factura_por_vehiculo(request: Request, vehiculo_id: int, db: Session = Depends(get_db)):
     if not es_admin(request):
@@ -460,94 +468,7 @@ def vista_reporte_ventas(request: Request, mes: str = None, anio: str = None, db
     )
 
 
-# 13. Registrar Venta Manualmente (Solo Admin - US-015, US-022)
-@router.post("/admin/venta/crear")
-def crear_venta_manual(
-    request: Request,
-    vehiculo_id: int = Form(...),
-    nombre: str = Form(...),
-    documento: str = Form(...),
-    correo: str = Form(...),
-    monto: float = Form(...),
-    fecha: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    if not es_admin(request):
-        return RedirectResponse(url="/web/login", status_code=status.HTTP_303_SEE_OTHER)
-
-    try:
-        comprador = db.query(UsuarioBD).filter((UsuarioBD.correo == correo) | (UsuarioBD.documento == documento)).first()
-        if not comprador:
-            comprador = UsuarioBD(
-                nombre=nombre,
-                documento=documento,
-                correo=correo,
-                rol="comprador"
-            )
-            db.add(comprador)
-            db.commit()
-            db.refresh(comprador)
-        else:
-            comprador.nombre = nombre
-            comprador.documento = documento
-            comprador.correo = correo
-            db.commit()
-
-        try:
-            if "T" in fecha:
-                fecha_parsed = datetime.strptime(fecha, "%Y-%m-%dT%H:%M")
-            else:
-                fecha_parsed = datetime.strptime(fecha, "%Y-%m-%d")
-        except ValueError:
-            fecha_parsed = datetime.now()
-
-        vehiculo = db.query(VehiculoBD).filter(VehiculoBD.id == vehiculo_id).first()
-        if vehiculo:
-            vehiculo.estado = "Vendido"
-
-        monto_validado = min(abs(monto), 9999999999.0)
-
-        venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo_id).first()
-        if not venta:
-            venta = VentaBD(
-                vehiculo_id=vehiculo_id,
-                comprador_id=comprador.id,
-                monto_total=monto_validado,
-                fecha_venta=fecha_parsed
-            )
-            db.add(venta)
-            db.commit()
-            db.refresh(venta)
-        else:
-            venta.comprador_id = comprador.id
-            venta.monto_total = monto_validado
-            venta.fecha_venta = fecha_parsed
-            db.commit()
-
-        factura = db.query(FacturaBD).filter(FacturaBD.venta_id == venta.id).first()
-        if not factura:
-            codigo_factura = f"FACT-{uuid.uuid4().hex[:8].upper()}"
-            factura = FacturaBD(
-                venta_id=venta.id,
-                codigo_factura=codigo_factura,
-                monto=monto_validado,
-                fecha_emision=fecha_parsed
-            )
-            db.add(factura)
-            db.commit()
-        else:
-            factura.monto = monto_validado
-            factura.fecha_emision = fecha_parsed
-            db.commit()
-
-    except Exception as e:
-        db.rollback()
-        print(f"Error al registrar venta manual: {e}")
-
-    return RedirectResponse(url="/web/admin/reportes", status_code=status.HTTP_303_SEE_OTHER)
-
-
-# 14. Editar Venta y Factura Existente (Solo Admin)
+# 13. Editar Venta y Factura Existente (Solo Admin)
 @router.post("/admin/venta/editar/{venta_id}")
 def editar_venta(
     request: Request,
@@ -623,7 +544,7 @@ def editar_venta(
     return RedirectResponse(url="/web/admin/reportes", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# 15. Eliminar Venta y Factura del Reporte (Solo Admin)
+# 14. Eliminar Venta y Factura del Reporte (Solo Admin)
 @router.post("/admin/venta/eliminar/{venta_id}")
 def eliminar_venta(request: Request, venta_id: int, db: Session = Depends(get_db)):
     if not es_admin(request):
