@@ -215,9 +215,9 @@ def procesar_registro_vehiculo(
     if not es_admin(request):
         return RedirectResponse(url="/web/login", status_code=status.HTTP_303_SEE_OTHER)
 
-    # Limitar valores maximos para evitar desbordamiento en la BD
-    precio_validado = min(precio, 9999999999.0)
-    kilometraje_validado = min(kilometraje, 2000000)
+    # Limitar valores maximos para evitar desbordamiento (Overflow) en la BD
+    precio_validado = min(abs(precio), 9999999999.0)
+    kilometraje_validado = min(abs(kilometraje), 2000000)
 
     foto_url = None
     if foto and foto.filename:
@@ -285,8 +285,8 @@ def procesar_editar_vehiculo(
             vehiculo.marca = marca
             vehiculo.modelo = modelo
             vehiculo.anio = anio
-            vehiculo.precio = min(precio, 9999999999.0)
-            vehiculo.kilometraje = min(kilometraje, 2000000)
+            vehiculo.precio = min(abs(precio), 9999999999.0)
+            vehiculo.kilometraje = min(abs(kilometraje), 2000000)
             vehiculo.especificaciones = especificaciones
             vehiculo.estado = estado
 
@@ -475,12 +475,14 @@ def crear_venta_manual(
         if vehiculo:
             vehiculo.estado = "Vendido"
 
+        monto_validado = min(abs(monto), 9999999999.0)
+
         venta = db.query(VentaBD).filter(VentaBD.vehiculo_id == vehiculo_id).first()
         if not venta:
             venta = VentaBD(
                 vehiculo_id=vehiculo_id,
                 comprador_id=comprador.id,
-                monto_total=min(monto, 9999999999.0),
+                monto_total=monto_validado,
                 fecha_venta=fecha_parsed
             )
             db.add(venta)
@@ -488,7 +490,7 @@ def crear_venta_manual(
             db.refresh(venta)
         else:
             venta.comprador_id = comprador.id
-            venta.monto_total = min(monto, 9999999999.0)
+            venta.monto_total = monto_validado
             venta.fecha_venta = fecha_parsed
             db.commit()
 
@@ -498,13 +500,13 @@ def crear_venta_manual(
             factura = FacturaBD(
                 venta_id=venta.id,
                 codigo_factura=codigo_factura,
-                monto=min(monto, 9999999999.0),
+                monto=monto_validado,
                 fecha_emision=fecha_parsed
             )
             db.add(factura)
             db.commit()
         else:
-            factura.monto = min(monto, 9999999999.0)
+            factura.monto = monto_validado
             factura.fecha_emision = fecha_parsed
             db.commit()
 
@@ -564,7 +566,7 @@ def editar_venta(
             except ValueError:
                 fecha_parsed = venta.fecha_venta or datetime.now()
 
-            monto_validado = min(monto, 9999999999.0)
+            monto_validado = min(abs(monto), 9999999999.0)
             venta.monto_total = monto_validado
             venta.fecha_venta = fecha_parsed
 

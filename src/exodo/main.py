@@ -7,7 +7,7 @@ from exodo.routers import vehiculos, vistas
 
 app = FastAPI(title="SIVVE - Sistema de Inventario y Venta de Vehículos")
 
-# Precarga automática de tablas y datos de prueba al iniciar la app (Requisito Docker)
+# Precarga automática de tablas y datos de prueba al iniciar la app (Requisito Docker / Startup)
 @app.on_event("startup")
 def startup_event():
     Base.metadata.create_all(bind=engine)
