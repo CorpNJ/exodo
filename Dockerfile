@@ -6,6 +6,7 @@ FROM python:3.12-slim
 # Evitar archivos .pyc y forzar salida inmediata en consola
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
 
 WORKDIR /app
 
