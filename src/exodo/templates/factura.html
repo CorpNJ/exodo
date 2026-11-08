@@ -3,6 +3,24 @@
 {% block title %}Factura {{ factura.codigo_factura }}{% endblock %}
 
 {% block content %}
+<!-- Estils específics per a la impressió -->
+<style>
+    @media print {
+        /* Amaga tots els elements amb la classe 'no-imprimir' durant la impressió */
+        .no-imprimir {
+            display: none !important;
+        }
+        /* Ajusta el fons i les ombres per a una impressió neta en paper/PDF */
+        body {
+            background-color: white !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow border-0 p-5 bg-white" id="seccion-factura">
@@ -39,7 +57,9 @@
                     </tr>
                 </tbody>
             </table>
-            <div class="text-center mt-4">
+            
+            <!-- La classe 'no-imprimir' amaga aquesta secció automàticament en imprimir o desar en PDF -->
+            <div class="text-center mt-4 no-imprimir">
                 <button onclick="window.print()" class="btn btn-primary me-2">🖨️ Imprimir Factura / Guardar PDF</button>
                 <a href="/web/catalogo" class="btn btn-outline-secondary">Volver al Catálogo</a>
             </div>
