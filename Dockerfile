@@ -1,34 +1,35 @@
-# Etapa 1: Construcción y dependencias
-FROM python:3.12-slim AS builder
-
-WORKDIR /app
-
-COPY requirements.txt .
-
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Etapa 2: Imagen final de producción
+# -------------------------------------------------------------
+# Dockerfile optimizado para FastAPI y Render / Docker Compose
+# -------------------------------------------------------------
 FROM python:3.12-slim
 
-RUN useradd --create-home --uid 1000 appuser
+# Evitar que Python escriba archivos .pyc y forzar salida sin buffer
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Instalar dependencias del sistema necesarias
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt-get/lists/*
 
-COPY --chown=appuser:appuser src ./src
-COPY --chown=appuser:appuser src/exodo/static/img ./src/exodo/static/img 2>/dev/null || true
+# Copiar e instalar requerimientos de Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p /app/src/exodo/static/img && chown -R appuser:appuser /app/src/exodo/static
+# Copiar el código de la aplicación
+COPY src ./src
 
+# Crear la estructura de carpetas estáticas para imágenes de vehículos
+RUN mkdir -p /app/src/exodo/static/img
+
+# Crear usuario no-root por seguridad
+RUN useradd --create-home --uid 1000 appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 6001
 
-HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6001/web/catalogo')" || exit 1
-
-CMD ["uvicorn", "exodo.main:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "6001"]
+CMD ["uvicorn", "src.exodo.main:app", "--host", "0.0.0.0", "--port", "6001"]
