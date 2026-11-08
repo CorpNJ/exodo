@@ -1,10 +1,36 @@
+name: sivve-exodo
+
 services:
-  web:
-    build: .
+  db:
+    image: postgres:16-alpine
+    container_name: sivve_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sivve_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sivve_password}
+      POSTGRES_DB: ${POSTGRES_DB:-sivve_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sivve_user} -d ${POSTGRES_DB:-sivve_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sivve_app
+    restart: always
     ports:
       - "6001:6001"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-Corp_Admin_2026_1403}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123#2026}
-    restart: always
+      - DATABASE_URL=${DATABASE_URL:-postgresql://sivve_user:sivve_password@db:5432/sivve_db}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -4,17 +4,17 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Gestión de Inventario (Admin)</h2>
-    <a href="/web/registro" class="btn btn-primary btn-sm">+ Nuevo Vehículo</a>
+    <h2 class="fw-bold">📋 Gestión de Inventario</h2>
+    <a href="/web/registro" class="btn btn-primary shadow-sm fw-bold">+ Registrar Vehículo</a>
 </div>
 
-<!-- Tabla de Inventario -->
 <div class="table-responsive bg-white rounded shadow-sm border p-3">
     <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
             <tr>
                 <th>ID</th>
-                <th>Marca / Modelo</th>
+                <th>Foto</th>
+                <th>Vehículo</th>
                 <th>Año</th>
                 <th>Precio</th>
                 <th>Estado</th>
@@ -25,29 +25,36 @@
             {% for v in vehiculos %}
             <tr>
                 <td>{{ v.id }}</td>
-                <td><strong>{{ v.marca }}</strong> {{ v.modelo }}</td>
-                <td>{{ v.anio }}</td>
-                <td>${{ "{:,.0f}".format(v.precio) }}</td>
                 <td>
-                    <span class="badge {% if v.estado == 'Disponible' %}bg-success{% elif v.estado == 'Vendido' %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {% if v.fotos_url %}
+                        <img src="{{ v.fotos_url }}" alt="{{ v.marca }}" style="width: 50px; height: 35px; object-fit: cover;" class="rounded border">
+                    {% else %}
+                        <span class="text-muted small">Sin foto</span>
+                    {% endif %}
+                </td>
+                <td><strong>{{ v.marca }} {{ v.modelo }}</strong></td>
+                <td>{{ v.anio }}</td>
+                <td>${{ "{:,.0f}".format(v.precio) if v.precio is not none else '0' }}</td>
+                <td>
+                    <span class="badge {% if v.estado == 'Disponible' %}bg-success{% elif v.estado == 'Vendido' %}bg-secondary{% else %}bg-danger{% endif %} px-2 py-1">
                         {{ v.estado }}
                     </span>
                 </td>
                 <td class="text-end">
-    <!-- Botón para Editar Ficha Técnica (US-025 #21) -->
-    <a href="/web/admin/editar/{{ v.id }}" class="btn btn-outline-primary btn-sm me-1">Editar</a>
+                    <a href="/web/admin/editar/{{ v.id }}" class="btn btn-outline-primary btn-sm me-1 fw-semibold">Editar</a>
+                    
+                    {% if v.estado == 'Vendido' %}
+                    <a href="/web/factura/{{ v.id }}" class="btn btn-outline-info btn-sm me-1 fw-semibold">Ver Factura</a>
+                    {% endif %}
 
-    <!-- Botón para Cambiar Estado / Desactivar (US-026 #22) -->
-    {% if v.estado != 'Inactivo' %}
-    <button data-id="{{ v.id }}" onclick="cambiarEstado(this.dataset.id, 'Inactivo')" class="btn btn-outline-danger btn-sm">Desactivar</button>
-    {% else %}
-    <button data-id="{{ v.id }}" onclick="cambiarEstado(this.dataset.id, 'Disponible')" class="btn btn-outline-success btn-sm">Activar</button>
-    {% endif %}
-</td>   
+                    <form method="POST" action="/web/admin/eliminar/{{ v.id }}" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">Eliminar</button>
+                    </form>
+                </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No existen registros de vehículos.</td>
+                <td colspan="7" class="text-center text-muted py-4">No se encuentran vehículos registrados en la base de datos.</td>
             </tr>
             {% endfor %}
         </tbody>

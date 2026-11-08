@@ -1,44 +1,24 @@
-SIVVE — Sistema de Inventario y Venta de Vehículos CorpNJ
+# SIVVE - Sistema de Inventario y Venta de Vehículos
 
-📋 Descripción del proyecto
+Plataforma web para la gestión centralizada de catálogo, control de stock en tiempo real, administración de ventas y generación automática de facturas para concesionarios de vehículos.
 
-SIVVE centraliza el catálogo de vehículos de un concesionario, elimina la gestión manual, y automatiza el registro de ventas y la generación de facturas.
+## Integrantes del Equipo
+* Johan Quirama Acevedo
+* Juan José Vélez Arias
+* Nicolás Gómez
 
-El sistema resuelve dos problemas críticos del proceso actual:
+## Tecnologías y Versiones
+* Python 3.12 / FastAPI 0.110.0
+* SQLAlchemy 2.0 / PostgreSQL 16 (o Neon PostgreSQL)
+* Docker & Docker Compose
+* HTML5, Jinja2, Bootstrap 5, Chart.js
+* Tablero GitHub Projects: [Tablero SIVVE](https://github.com/orgs/CorpNJ/projects/1)
 
-Doble venta: el inventario se actualiza en tiempo real al confirmar una compra, evitando que un mismo vehículo se venda dos veces. Descuadres de inventario: toda entrada, salida y cambio de estado de un vehículo queda registrada y trazada.
+## Instrucciones de Despliegue con Docker
 
-Funcionalidades principales:
+Para levantar todo el sistema desde un clon limpio (backend, frontend y base de datos):
 
-Registro y edición de vehículos (ficha técnica, fotos, precio, estado) — acceso de vendedores mediante login. Catálogo público de consulta y filtrado (marca, precio, año) para compradores. Confirmación de compra con actualización automática del stock (< 3 segundos). Generación automática de factura al confirmar la venta. Reporte mensual de ventas por vehículo, vendedor y monto.
-
-👥 Integrantes
-
-Johan Quirama Acevedo
-
-Juan Jose Vélez Arias
-
-Nicolas Gomez
-
-Backend: Java + Spring Boot (API REST)
-
-Frontend: Angular
-
-Clonar el repositorio
-git clone <URL_DEL_REPOSITORIO>
-
-cd sivve
-
-Levantar el backend (API + base de datos)
-cd backend
-
-./mvnw spring-boot:run
-
-Levantar el frontend (en otra terminal)
-cd frontend
-
-npm install
-
-ng serve
-
-La aplicación Angular quedará disponible en http://localhost:4200 y se conectará al backend mediante la configuración de environment.ts (por defecto apuntando a http://localhost:8080/api).
+```bash
+git clone [https://github.com/CorpNJ/exodo.git](https://github.com/CorpNJ/exodo.git)
+cd exodo
+docker compose up -d --build

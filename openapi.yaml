@@ -1,0 +1,119 @@
+]openapi: 3.0.3
+info:
+  title: SIVVE - Sistema de Inventario y Venta de Vehículos
+  description: API REST y motor web para la gestión de catálogo, ventas y facturación de vehículos.
+  version: 1.0.0
+paths:
+  /web/catalogo:
+    get:
+      summary: Obtener el catálogo web de vehículos disponibles
+      responses:
+        '200':
+          description: Página HTML renderizada del catálogo
+  /web/login:
+    get:
+      summary: Formulario de inicio de sesión de administrador
+      responses:
+        '200':
+          description: Página de login
+    post:
+      summary: Autenticar administrador
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                correo:
+                  type: string
+                contrasena:
+                  type: string
+      responses:
+        '303':
+          description: Redirección al panel de administración
+        '401':
+          description: Credenciales inválidas
+  /modificarstock/{vehiculo_id}:
+    post:
+      summary: Modificar el stock de un vehículo tras una compra
+      parameters:
+        - name: vehiculo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Estado del vehículo actualizado a Vendido
+        '400':
+          description: Vehículo no disponible
+        '404':
+          description: Vehículo no encontrado
+  /admin/venta/crear:
+    post:
+      summary: Registrar manualmente una venta
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VentaCrear'
+      responses:
+        '303':
+          description: Redirección al reporte de ventas
+  /admin/venta/editar/{venta_id}:
+    post:
+      summary: Modificar una venta y su factura asociada
+      parameters:
+        - name: venta_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VentaCrear'
+      responses:
+        '303':
+          description: Redirección al reporte de ventas
+  /admin/venta/eliminar/{venta_id}:
+    post:
+      summary: Eliminar una venta y su factura
+      parameters:
+        - name: venta_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '303':
+          description: Redirección al reporte de ventas
+
+components:
+  schemas:
+    VentaCrear:
+      type: object
+      required:
+        - vehiculo_id
+        - nombre
+        - documento
+        - correo
+        - monto
+        - fecha
+      properties:
+        vehiculo_id:
+          type: integer
+        nombre:
+          type: string
+        documento:
+          type: string
+        correo:
+          type: string
+        monto:
+          type: number
+        fecha:
+          type: string

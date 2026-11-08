@@ -3,59 +3,104 @@
 {% block title %}Catálogo de Vehículos - SIVVE{% endblock %}
 
 {% block content %}
+<style>
+    /* Fondo ambiental para generar contraste real con las tarjetas */
+    body {
+        background-color: #dce3eb !important;
+    }
+
+    /* Estructura general de tarjeta con borde definido */
+    .tarjeta-vehiculo {
+        background-color: #ffffff !important;
+        border: 2px solid #94a3b8 !important;
+        border-radius: 10px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .tarjeta-vehiculo:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+        border-color: #0d6efd !important;
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Catálogo de Vehículos</h2>
+    <h2 class="fw-bold text-dark mb-0">🚘 Catálogo de Vehículos</h2>
+    <button class="btn btn-outline-primary btn-sm shadow-sm fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#panelFiltros" aria-expanded="false">
+        🔍 {% if marca_filtro or estado_filtro %}Filtros Activos{% else %}Filtrar Catálogo{% endif %}
+    </button>
 </div>
 
-<!-- Filtros de Búsqueda (US-011) -->
-<form method="GET" action="/web/catalogo" class="row g-3 mb-4 bg-white p-3 rounded shadow-sm border">
-    <div class="col-md-5">
-        <label class="form-label fw-bold">Marca</label>
-        <input type="text" name="marca" class="form-control" placeholder="Ej: Chevrolet, Mazda..." value="{{ marca_filtro or '' }}">
-    </div>
-    <div class="col-md-4">
-        <label class="form-label fw-bold">Estado</label>
-        <select name="estado" class="form-select">
-            <option value="Disponible" {% if estado_filtro == 'Disponible' %}selected{% endif %}>Disponibles</option>
-            <option value="Vendido" {% if estado_filtro == 'Vendido' %}selected{% endif %}>Vendidos</option>
-            <option value="" {% if not estado_filtro %}selected{% endif %}>Todos</option>
-        </select>
-    </div>
-    <div class="col-md-3 d-flex align-items-end">
-        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-    </div>
-</form>
+<!-- Panel de Filtros Plegable -->
+<div class="collapse {% if marca_filtro or (estado_filtro and estado_filtro != 'Disponible') %}show{% endif %} mb-4" id="panelFiltros">
+    <form method="GET" action="/web/catalogo" class="card card-body bg-white border shadow-sm rounded-3">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label fw-bold small text-secondary">Marca</label>
+                <input type="text" name="marca" class="form-control form-control-sm" placeholder="Ej: Chevrolet, Mazda..." value="{{ marca_filtro or '' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Estado</label>
+                <select name="estado" class="form-select form-select-sm">
+                    <option value="Disponible" {% if estado_filtro == 'Disponible' %}selected{% endif %}>Disponibles</option>
+                    <option value="Vendido" {% if estado_filtro == 'Vendido' %}selected{% endif %}>Vendidos</option>
+                    <option value="" {% if not estado_filtro %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold">Aplicar</button>
+                <a href="/web/catalogo" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+            </div>
+        </div>
+    </form>
+</div>
 
-<!-- Grid de Tarjetas de Vehículos -->
+<!-- Galería de Vehículos -->
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for v in vehiculos %}
     <div class="col">
-        <div class="card h-100 shadow-sm border-0">
-            <!-- Imagen del Vehículo o Marcador por Defecto -->
-            {% if v.fotos_url %}
-                <img src="{{ v.fotos_url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ v.marca }} {{ v.modelo }}">
-            {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center rounded-top" style="height: 200px;">
-                    <span class="text-muted fs-4">🚘 Sin Imagen</span>
-                </div>
-            {% endif %}
-
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h5 class="card-title mb-0">{{ v.marca }} {{ v.modelo }}</h5>
-                    <span class="badge {% if v.estado == 'Disponible' %}bg-success{% else %}bg-secondary{% endif %}">
-                        {{ v.estado }}
-                    </span>
-                </div>
-                <p class="card-text text-muted mb-1">Año: {{ v.anio }}</p>
-                <p class="card-text text-muted mb-3">Kilometraje: {{ v.kilometraje }} km</p>
-                <h4 class="text-primary fw-bold mb-0">${{ "{:,.0f}".format(v.precio) if v.precio is not none else '0' }}</h4>
+        <div class="card h-100 tarjeta-vehiculo overflow-hidden">
+            <!-- Marco de Imagen 4:3 con encuadre estándar -->
+            <div class="ratio ratio-4x3 bg-secondary-subtle border-bottom">
+                {% if v.fotos_url %}
+                    <img src="{{ v.fotos_url }}" 
+                         class="w-100 h-100 object-fit-cover" 
+                         alt="{{ v.marca }} {{ v.modelo }}"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="align-items-center justify-content-center text-muted" style="display: none;">
+                        <span class="fs-5 fw-bold">🚘 Sin Imagen</span>
+                    </div>
+                {% else %}
+                    <div class="d-flex align-items-center justify-content-center text-muted">
+                        <span class="fs-5 fw-bold">🚘 Sin Imagen</span>
+                    </div>
+                {% endif %}
             </div>
 
-            <div class="card-footer bg-white border-top-0 d-flex justify-content-between gap-2">
-                <a href="/web/vehiculo/{{ v.id }}" class="btn btn-outline-secondary btn-sm flex-grow-1">Ver Detalle</a>
+            <!-- Cuerpo de Ficha Técnica -->
+            <div class="card-body d-flex flex-column justify-content-between p-3 bg-white">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h4 class="fw-bold text-dark mb-0">{{ v.marca }} {{ v.modelo }}</h4>
+                        <span class="badge {% if v.estado == 'Disponible' %}bg-success{% else %}bg-secondary{% endif %} fs-6 px-2 py-1">
+                            {{ v.estado }}
+                        </span>
+                    </div>
+                    <p class="text-secondary mb-1 small">Año: <strong class="text-dark">{{ v.anio }}</strong></p>
+                    <p class="text-secondary mb-3 small">Kilometraje: <strong class="text-dark">{{ "{:,.0f}".format(v.kilometraje or 0) }} km</strong></p>
+                </div>
+
+                <div class="pt-3 border-top">
+                    <span class="text-uppercase text-secondary fw-bold small d-block mb-1" style="letter-spacing: 0.5px;">Precio de contado:</span>
+                    <h3 class="text-primary fw-bold mb-0">${{ "{:,.0f}".format(v.precio) if v.precio is not none else '0' }}</h3>
+                </div>
+            </div>
+
+            <!-- Pie de Tarjeta -->
+            <div class="card-footer bg-light border-top d-flex justify-content-between gap-2 p-3">
+                <a href="/web/vehiculo/{{ v.id }}" class="btn btn-outline-dark btn-sm flex-grow-1 fw-bold">Ver Detalle</a>
                 {% if v.estado == 'Disponible' %}
-                <a href="/web/comprar/{{ v.id }}" class="btn btn-success btn-sm flex-grow-1">Comprar</a>
+                <a href="/web/comprar/{{ v.id }}" class="btn btn-success btn-sm flex-grow-1 fw-bold">Comprar</a>
                 {% endif %}
             </div>
         </div>

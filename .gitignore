@@ -2,6 +2,7 @@
 .venv/
 venv/
 env/
+.dockerignore
 
 # Caché de compilación
 __pycache__/
