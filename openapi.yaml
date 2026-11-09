@@ -1,109 +1,834 @@
-]openapi: 3.0.3
+openapi: 3.0.3
+
 info:
   title: SIVVE - Sistema de Inventario y Venta de Vehículos
-  description: API REST y motor web para la gestión de catálogo, ventas y facturación de vehículos.
+  description: |
+    API REST (JSON) y motor web (HTML) para la gestión del catálogo, ventas y
+    facturación de vehículos usados.
+
+    * Las rutas bajo `/vehiculos` son la API JSON.
+    * Las rutas bajo `/web` son el frontend renderizado en el servidor (HTML).
+      Las rutas de administración (`/web/admin/*`, `/web/registro`) exigen la
+      cookie de sesión `session_role=admin`, que se obtiene en `POST /web/login`.
+      Si la cookie no existe, el servidor responde `303` hacia `/web/login`.
   version: 1.0.0
+
+servers:
+  - url: http://localhost:6001
+    description: Entorno local (Docker Compose)
+
+tags:
+  - name: General
+    description: Estado de la API
+  - name: Vehículos
+    description: API JSON para el inventario de vehículos
+  - name: Frontend Web
+    description: Vistas HTML y formularios del sitio
+
 paths:
+  /:
+    get:
+      tags: [General]
+      summary: Estado de la API
+      operationId: raiz
+      responses:
+        '200':
+          description: La API está operativa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+
+  # ------------------------------------------------------------------
+  # API JSON - Vehículos
+  # ------------------------------------------------------------------
+  /vehiculos/:
+    post:
+      tags: [Vehículos]
+      summary: Registrar un vehículo (US-010)
+      operationId: agregarVehiculo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehiculoRegistro'
+      responses:
+        '201':
+          description: Vehículo registrado con estado "Disponible"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehiculoCreado'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+    get:
+      tags: [Vehículos]
+      summary: Listar y filtrar vehículos (US-015)
+      description: |
+        Si no se envía `estado`, se excluyen los vehículos dados de baja
+        (estado "Inactivo").
+      operationId: listarVehiculos
+      parameters:
+        - name: marca
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: modelo
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: anio
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            example: Disponible
+      responses:
+        '200':
+          description: Lista de vehículos (puede ser vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VehiculoRespuesta'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /vehiculos/{vehiculo_id}:
+    get:
+      tags: [Vehículos]
+      summary: Obtener el detalle de un vehículo
+      operationId: obtenerVehiculo
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '200':
+          description: Detalle del vehículo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehiculoRespuesta'
+        '404':
+          $ref: '#/components/responses/VehiculoNoEncontrado'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+    delete:
+      tags: [Vehículos]
+      summary: Dar de baja un vehículo (baja lógica)
+      description: Cambia el estado a "Inactivo". No se permite si ya está vendido.
+      operationId: darDeBajaVehiculo
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '200':
+          description: Vehículo dado de baja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CambioEstado'
+        '400':
+          description: El vehículo ya está vendido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/VehiculoNoEncontrado'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /vehiculos/modificarstock/{vehiculo_id}:
+    post:
+      tags: [Vehículos]
+      summary: Marcar un vehículo como vendido tras una compra (US-015)
+      operationId: modificarStock
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '200':
+          description: Vehículo marcado como "Vendido"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CambioEstado'
+        '400':
+          description: Vehículo no disponible (ya estaba vendido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/VehiculoNoEncontrado'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  # ------------------------------------------------------------------
+  # Frontend web (HTML)
+  # ------------------------------------------------------------------
   /web/catalogo:
     get:
-      summary: Obtener el catálogo web de vehículos disponibles
+      tags: [Frontend Web]
+      summary: Catálogo público de vehículos (US-011)
+      operationId: verCatalogo
+      parameters:
+        - name: marca
+          in: query
+          required: false
+          description: Filtro parcial por marca (sin distinguir mayúsculas)
+          schema:
+            type: string
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Disponible
       responses:
         '200':
-          description: Página HTML renderizada del catálogo
+          $ref: '#/components/responses/PaginaHtml'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/vehiculo/{vehiculo_id}:
+    get:
+      tags: [Frontend Web]
+      summary: Vista de detalle de un vehículo (US-027)
+      operationId: verDetalle
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          description: El vehículo no existe; redirige a `/web/catalogo`
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
   /web/login:
     get:
+      tags: [Frontend Web]
       summary: Formulario de inicio de sesión de administrador
+      operationId: vistaLogin
       responses:
         '200':
-          description: Página de login
+          $ref: '#/components/responses/PaginaHtml'
     post:
+      tags: [Frontend Web]
       summary: Autenticar administrador
+      description: |
+        Si las credenciales son válidas, crea la cookie `session_role=admin`
+        y redirige al inventario. Si no lo son, vuelve a mostrar el formulario
+        con un mensaje de error.
+      operationId: procesarLogin
       requestBody:
         required: true
         content:
           application/x-www-form-urlencoded:
             schema:
-              type: object
-              properties:
-                correo:
-                  type: string
-                contrasena:
-                  type: string
-      responses:
-        '303':
-          description: Redirección al panel de administración
-        '401':
-          description: Credenciales inválidas
-  /modificarstock/{vehiculo_id}:
-    post:
-      summary: Modificar el stock de un vehículo tras una compra
-      parameters:
-        - name: vehiculo_id
-          in: path
-          required: true
-          schema:
-            type: integer
+              $ref: '#/components/schemas/LoginFormulario'
       responses:
         '200':
-          description: Estado del vehículo actualizado a Vendido
-        '400':
-          description: Vehículo no disponible
-        '404':
-          description: Vehículo no encontrado
-  /admin/venta/crear:
+          description: Credenciales inválidas o no autorizadas (HTML con el error)
+          content:
+            text/html:
+              schema:
+                type: string
+        '303':
+          description: Sesión iniciada; redirige a `/web/admin/inventario`
+          headers:
+            Set-Cookie:
+              description: Cookie de sesión `session_role=admin` (HttpOnly)
+              schema:
+                type: string
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/logout:
+    get:
+      tags: [Frontend Web]
+      summary: Cerrar sesión
+      operationId: cerrarSesion
+      responses:
+        '303':
+          description: Elimina la cookie de sesión y redirige a `/web/catalogo`
+
+  /web/comprar/{vehiculo_id}:
+    get:
+      tags: [Frontend Web]
+      summary: Formulario de registro de comprador
+      operationId: vistaRegistroComprador
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          description: El vehículo no existe; redirige a `/web/catalogo`
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
     post:
-      summary: Registrar manualmente una venta
+      tags: [Frontend Web]
+      summary: Procesar compra, registrar venta y generar factura
+      operationId: procesarCompra
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
       requestBody:
         required: true
         content:
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VentaCrear'
+              $ref: '#/components/schemas/CompraFormulario'
       responses:
         '303':
-          description: Redirección al reporte de ventas
-  /admin/venta/editar/{venta_id}:
+          description: |
+            Compra registrada; redirige a `/web/factura/{id}`. Si el vehículo no
+            existe o ocurre un error interno, redirige a `/web/catalogo`.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/factura/{factura_id}:
+    get:
+      tags: [Frontend Web]
+      summary: Ver una factura
+      operationId: verFactura
+      parameters:
+        - name: factura_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          description: La factura no existe; redirige a `/web/catalogo`
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/factura_vehiculo/{vehiculo_id}:
+    get:
+      tags: [Frontend Web]
+      summary: Redirigir a la factura de un vehículo vendido
+      description: Crea la venta y la factura si aún no existen.
+      operationId: verFacturaPorVehiculo
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '303':
+          description: |
+            Redirige a `/web/factura/{id}`, o a `/web/login` si no hay sesión
+            de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/inventario:
+    get:
+      tags: [Frontend Web]
+      summary: Inventario de administración
+      operationId: vistaAdminInventario
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          $ref: '#/components/responses/RedirigeALogin'
+
+  /web/admin/registro:
+    get:
+      tags: [Frontend Web]
+      summary: Formulario de registro de un vehículo
+      operationId: vistaRegistroVehiculo
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          $ref: '#/components/responses/RedirigeALogin'
     post:
+      tags: [Frontend Web]
+      summary: Registrar un vehículo desde el formulario web
+      operationId: procesarRegistroVehiculo
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VehiculoFormulario'
+      responses:
+        '303':
+          description: |
+            Vehículo registrado; redirige a `/web/admin/inventario`, o a
+            `/web/login` si no hay sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/registro:
+    get:
+      tags: [Frontend Web]
+      summary: Alias de `/web/admin/registro` (formulario)
+      operationId: vistaRegistroVehiculoAlias
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          $ref: '#/components/responses/RedirigeALogin'
+    post:
+      tags: [Frontend Web]
+      summary: Alias de `POST /web/admin/registro`
+      operationId: procesarRegistroVehiculoAlias
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VehiculoFormulario'
+      responses:
+        '303':
+          description: |
+            Vehículo registrado; redirige a `/web/admin/inventario`, o a
+            `/web/login` si no hay sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/editar/{vehiculo_id}:
+    get:
+      tags: [Frontend Web]
+      summary: Formulario para editar la ficha técnica y el estado
+      operationId: vistaEditarVehiculo
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          description: |
+            Redirige a `/web/login` (sin sesión) o a `/web/admin/inventario`
+            (el vehículo no existe).
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+    post:
+      tags: [Frontend Web]
+      summary: Guardar los cambios de un vehículo
+      description: |
+        Si el estado cambia a "Vendido" y no existía venta, se crean la venta
+        y su factura.
+      operationId: procesarEditarVehiculo
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VehiculoEdicionFormulario'
+      responses:
+        '303':
+          description: |
+            Redirige a `/web/admin/inventario`, o a `/web/login` si no hay
+            sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/eliminar/{vehiculo_id}:
+    post:
+      tags: [Frontend Web]
+      summary: Eliminar definitivamente un vehículo (con su venta y factura)
+      operationId: eliminarVehiculoCompleto
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/VehiculoId'
+      responses:
+        '303':
+          description: |
+            Redirige a `/web/admin/inventario`, o a `/web/login` si no hay
+            sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/reportes:
+    get:
+      tags: [Frontend Web]
+      summary: Reporte de ventas mensuales con gráfico
+      operationId: vistaReporteVentas
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/Mes'
+        - $ref: '#/components/parameters/Anio'
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          $ref: '#/components/responses/RedirigeALogin'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/reporte_ventas:
+    get:
+      tags: [Frontend Web]
+      summary: Alias de `/web/admin/reportes`
+      operationId: vistaReporteVentasAlias
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/Mes'
+        - $ref: '#/components/parameters/Anio'
+      responses:
+        '200':
+          $ref: '#/components/responses/PaginaHtml'
+        '303':
+          $ref: '#/components/responses/RedirigeALogin'
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/venta/editar/{venta_id}:
+    post:
+      tags: [Frontend Web]
       summary: Modificar una venta y su factura asociada
+      operationId: editarVenta
+      security:
+        - sessionCookie: []
       parameters:
-        - name: venta_id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/VentaId'
       requestBody:
         required: true
         content:
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VentaCrear'
+              $ref: '#/components/schemas/VentaFormulario'
       responses:
         '303':
-          description: Redirección al reporte de ventas
-  /admin/venta/eliminar/{venta_id}:
-    post:
+          description: |
+            Redirige a `/web/admin/reportes`, o a `/web/login` si no hay
+            sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+
+  /web/admin/venta/eliminar/{venta_id}:
+    get:
+      tags: [Frontend Web]
       summary: Eliminar una venta y su factura
+      description: Restaura el vehículo a "Disponible". También acepta `POST`.
+      operationId: eliminarVentaGet
+      security:
+        - sessionCookie: []
       parameters:
-        - name: venta_id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/VentaId'
       responses:
         '303':
-          description: Redirección al reporte de ventas
+          description: |
+            Redirige a `/web/admin/reportes`, o a `/web/login` si no hay
+            sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
+    post:
+      tags: [Frontend Web]
+      summary: Eliminar una venta y su factura
+      description: Restaura el vehículo a "Disponible".
+      operationId: eliminarVentaPost
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/VentaId'
+      responses:
+        '303':
+          description: |
+            Redirige a `/web/admin/reportes`, o a `/web/login` si no hay
+            sesión de administrador.
+        '422':
+          $ref: '#/components/responses/ErrorValidacion'
 
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session_role
+      description: |
+        Cookie de sesión de administrador. Se establece con el valor `admin`
+        al iniciar sesión en `POST /web/login`. Sin ella, las rutas protegidas
+        responden `303` hacia `/web/login`.
+
+  parameters:
+    VehiculoId:
+      name: vehiculo_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1
+    VentaId:
+      name: venta_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1
+    Mes:
+      name: mes
+      in: query
+      required: false
+      description: Mes (1-12). Por defecto, el mes actual.
+      schema:
+        type: string
+        example: '11'
+    Anio:
+      name: anio
+      in: query
+      required: false
+      description: Año. Por defecto, el año actual.
+      schema:
+        type: string
+        example: '2026'
+
+  responses:
+    PaginaHtml:
+      description: Página HTML renderizada
+      content:
+        text/html:
+          schema:
+            type: string
+    RedirigeALogin:
+      description: No hay sesión de administrador; redirige a `/web/login`
+    VehiculoNoEncontrado:
+      description: El vehículo no existe en el inventario
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorValidacion:
+      description: Error de validación de los parámetros o del cuerpo
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+
   schemas:
-    VentaCrear:
+    Mensaje:
       type: object
-      required:
-        - vehiculo_id
-        - nombre
-        - documento
-        - correo
-        - monto
-        - fecha
+      required: [mensaje]
+      properties:
+        mensaje:
+          type: string
+          example: API SIVVE Operativa. Ve a /web/catalogo para acceder al catálogo.
+
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          example: El vehículo con ID 99 no existe en el inventario.
+
+    ValidationError:
+      type: object
+      required: [loc, msg, type]
+      properties:
+        loc:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+
+    HTTPValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    VehiculoRegistro:
+      type: object
+      required: [marca, modelo, anio, precio]
+      properties:
+        marca:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: Toyota
+        modelo:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: Corolla
+        anio:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+          example: 2023
+        precio:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          example: 95000000
+        kilometraje:
+          type: integer
+          minimum: 0
+          default: 0
+          example: 15000
+        especificaciones:
+          type: string
+          nullable: true
+          example: Motor 2.0, Transmisión Automática CVT
+
+    VehiculoRespuesta:
+      type: object
+      required: [id, marca, modelo, anio, precio]
+      properties:
+        id:
+          type: integer
+          example: 1
+        marca:
+          type: string
+          example: Toyota
+        modelo:
+          type: string
+          example: Corolla
+        anio:
+          type: integer
+          example: 2023
+        precio:
+          type: number
+          format: double
+          example: 95000000
+        kilometraje:
+          type: integer
+          nullable: true
+          default: 0
+          example: 15000
+        especificaciones:
+          type: string
+          nullable: true
+          example: Motor 2.0, Transmisión Automática CVT
+        estado:
+          type: string
+          nullable: true
+          description: Disponible, Vendido o Inactivo
+          example: Disponible
+        fotos_url:
+          type: string
+          nullable: true
+          example: /static/img/7e2263e7.png
+
+    VehiculoCreado:
+      type: object
+      required: [mensaje, vehiculo_id, estado]
+      properties:
+        mensaje:
+          type: string
+          example: Vehículo Toyota Corolla registrado correctamente
+        vehiculo_id:
+          type: integer
+          example: 3
+        estado:
+          type: string
+          example: Disponible
+
+    CambioEstado:
+      type: object
+      required: [mensaje, estado_nuevo]
+      properties:
+        mensaje:
+          type: string
+          example: Compra confirmada. El vehículo Toyota Corolla (ID 1) ha sido marcado como Vendido.
+        estado_nuevo:
+          type: string
+          example: Vendido
+
+    LoginFormulario:
+      type: object
+      required: [correo, contrasena]
+      properties:
+        correo:
+          type: string
+          example: admin@sivve.com
+        contrasena:
+          type: string
+          format: password
+
+    CompraFormulario:
+      type: object
+      required: [nombre, documento, correo]
+      properties:
+        nombre:
+          type: string
+          example: Carlos Ramírez
+        documento:
+          type: string
+          example: '1098765432'
+        correo:
+          type: string
+          example: comprador@sivve.com
+
+    VehiculoFormulario:
+      type: object
+      required: [marca, modelo, anio, precio]
+      properties:
+        marca:
+          type: string
+        modelo:
+          type: string
+        anio:
+          type: integer
+        precio:
+          type: number
+          format: double
+        kilometraje:
+          type: integer
+          default: 0
+        especificaciones:
+          type: string
+          default: ''
+        foto:
+          type: string
+          format: binary
+          description: Imagen del vehículo (opcional)
+
+    VehiculoEdicionFormulario:
+      allOf:
+        - $ref: '#/components/schemas/VehiculoFormulario'
+        - type: object
+          required: [estado]
+          properties:
+            estado:
+              type: string
+              example: Disponible
+
+    VentaFormulario:
+      type: object
+      required: [vehiculo_id, nombre, documento, correo, monto, fecha]
       properties:
         vehiculo_id:
           type: integer
@@ -115,5 +840,8 @@ components:
           type: string
         monto:
           type: number
+          format: double
         fecha:
           type: string
+          description: Formato `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`
+          example: '2026-11-08T10:30'
